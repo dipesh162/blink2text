@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	
+	<link rel="stylesheet" href="/static/css/style.css">
+
+	<title>AI LAB PROJECT</title>
+	<style type="text/css">
+		#imageElement
+{
+    border-width: 10px;
+    border-color: Black;
+}
+	</style>
+</head>
+
+<body>
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="#">Blink2Text</a>
+    </div>
+    <ul class="nav navbar-nav">
+      <li class="active"><a href="/">Home</a></li>
+      
+    </ul>
+  </div>
+</nav>
+	<div class="container-fluid">
+		<div>
+		</div>
+		
+
+		<div class="row">
+
+			<div class="col-md-5 col-sm-offset-1">
+				<h2>Web Cam</h2>
+				<div class="ImageBorder">
+				<img id="imageElement" alt="Coming Soon..." src=""><img/>
+			</div>
+
+				<video autoplay="true" id="videoElement"></video>			
+			
+            	<canvas id="canvasElement"></canvas>
+
+			</div>
+		
+			<div class="col-md-5">
+				
+				<h1>Table Transition</h1>
+				<table id="table" class="table table-bordered">
+					<tbody>
+						<tr id="r0" style="visibility: hidden;">
+							<td id="r0c0">Z</td>
+							<td id="r0c1"> </td>
+							<td id="r0c2">.</td>
+							<td id="r0c3"><--</td>
+							<td id="r0c4">CLR</td>
+						</tr>				
+					</tbody>
+				</table>
+
+				<textarea id="sentence" readonly rows="5" cols="50"></textarea>
+				
+				<div>
+					<button  class="btn btn-lg btn-colColor" type="button" onclick="sound()">Beep Test</button>
+				
+				</div>
+
+			</div> 	
+		</div>
+	</div>
+
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+
+<script type="text/javascript" charset="utf-8">
+
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+    var video =document.getElementById('videoElement');
+    var image= document.getElementById('imageElement');
+    var canvas =  document.getElementById('canvasElement');
+
+    var ctx = canvas.getContext('2d');
+
+    socket.on('connect', function() {
+        console.log("connected");
+    });
+
+    function encode (input) {
+	    var keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+	    var output = "";
+	    var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
+	    var i = 0;
+
+	    while (i < input.length) {
+	        chr1 = input[i++];
+	        chr2 = i < input.length ? input[i++] : Number.NaN; // Not sure if the index 
+	        chr3 = i < input.length ? input[i++] : Number.NaN; // checks are needed here
+
+	        enc1 = chr1 >> 2;
+	        enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+	        enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+	        enc4 = chr3 & 63;
+
+	        if (isNaN(chr2)) {
+	            enc3 = enc4 = 64;
+	        } else if (isNaN(chr3)) {
+	            enc4 = 64;
+	        }
+	        output += keyStr.charAt(enc1) + keyStr.charAt(enc2) +
+	                  keyStr.charAt(enc3) + keyStr.charAt(enc4);
+	    }
+	    return output;
+	}
+
+    socket.on('im1',function(op){
+    	var bytes = new Uint8Array(op);
+	    image.src = 'data:image/png;base64,'+encode(bytes);
+	    console.log('df');
+	    loop();
+    });
+	
+	socket.on('im2',function(op){
+    	// console.log(JSON.parse(data));
+    	var bytes = new Uint8Array(op);
+	    image.src = 'data:image/png;base64,'+encode(bytes);
+	    console.log('in');
+    });
+	
+
+    var localMediaStream = null ;
+
+    function sendSnapshot(){
+    	if(!localMediaStream){
+    		console.log("sdf");
+    		return ;
+    	}
+
+	 ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight, 0, 0, 300, 200);
+
+	 var dataURL = canvas.toDataURL('image/jpeg');
+	 socket.emit('input image', dataURL);
+    }
+
+var constraints = {
+    video: {
+      width: { min: 300 },
+      height: { min: 200 }
+    }
+  };
+
+  navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+    video.srcObject = stream;
+    localMediaStream = stream;
+    setInterval(function () {
+      sendSnapshot();
+    }, 100);
+  }).catch(function(error) {
+    console.log(error);
+  });
+
+</script>
+
+
+
+<script type="text/javascript">
+
+var row0=table.rows[0];
+var rowColor = 'danger';
+var colColor = 'danger' ;
+var rowCount=0,columnCount=0,rowSize=6,colSize=5, delay=1800, blink = 0 ;
+
+function createTable(){
+
+	var table=document.getElementById("table");
+	var ascii='A'.charCodeAt();
+	var row;
+
+	for(var i=0;i<5;i++){
+		
+		var tr=table.insertRow();
+		tr.id="r"+(i+1);
+		
+		row=table.rows[i];
+
+		for(var j=0;j<5;j++){
+			var td=tr.insertCell();
+			
+			td.innerHTML=row.cells[j].innerHTML;
+			row.cells[j].innerHTML=String.fromCharCode(ascii+i*5+j);				
+			
+			td.id="r"+(i+1)+"c"+j;
+		}
+	}
+	document.getElementById("r0").style.visibility="visible";
+}
+
+createTable();
+
+//Return Previous value of Count
+function getPrevious(count,size){
+
+	return (count-1+size)%size;
+}
+
+function getNext(count,size){
+	return (count+1)%size;
+}
+
+function rowHighlight(){	
+	var curr,pre;
+	
+	//get previous row
+	pre=document.getElementById( "r" + getPrevious(rowCount,rowSize) );
+
+	//get current row
+	curr=document.getElementById( "r" + rowCount);
+
+	//check if previous row is highlighted; if so then remove marker
+	if(pre.classList.contains("danger"))
+		pre.classList.remove("danger");
+
+	//highlight the current row
+	curr.classList.add("danger");
+
+	//Increment Count
+	rowCount=getNext(rowCount,rowSize);
+}
+
+function columnHighlight(){
+	var curr,pre;		
+
+	document.getElementById( "r" + getPrevious(rowCount,rowSize)).classList.remove("danger");
+
+	// get Previous column
+	pre=document.getElementById("r" + getPrevious(rowCount,rowSize) + "c" + getPrevious(columnCount,colSize) );
+
+	// get Current Column
+	curr=document.getElementById("r" + getPrevious(rowCount,rowSize) + "c" + columnCount);
+
+	console.log("r" + getPrevious(rowCount,rowSize) + "c" + getPrevious(columnCount,colSize));
+
+	if(pre.classList.contains(colColor))
+		pre.classList.remove(colColor);
+
+	curr.classList.add(colColor);
+
+	columnCount=getNext(columnCount,colSize);
+}
+
+function cleaRowHighlighter(){
+	clearInterval(rowInterval);
+
+	columnCount=0;
+	columnInterval=setInterval(columnHighlight,delay);
+}
+
+
+function restart(){
+	clearInterval(columnInterval);
+	
+	document.getElementById("r" + getPrevious(rowCount,rowSize) + "c" + getPrevious(columnCount,colSize) ).classList.remove(colColor);
+
+	var ch=document.getElementById("r" + getPrevious(rowCount,rowSize) + "c" + getPrevious(columnCount,colSize) ).innerHTML;
+
+	var text=document.getElementById("sentence");
+
+	switch(ch){
+
+		case "&lt;--": text.innerHTML=text.innerHTML.slice(0,-1);
+			 		break;
+		case "CLR": text.innerHTML="";
+					break;
+		default : text.innerHTML+=ch;
+	}
+	rowCount=getPrevious(rowCount,rowSize);
+	rowInterval=setInterval(rowHighlight,delay);
+}
+
+var rowInterval=setInterval(rowHighlight,delay);
+
+function sound(){
+	new Audio('./static/beep-07.wav').play();
+}
+
+function loop (){
+	blink += 1;
+	blink %= 2;
+
+	if(blink % 2){
+		sound();
+		cleaRowHighlighter();
+	}
+
+	else{
+		sound();
+		restart();
+	}
+}
+</script>
+	
+</body>
+
+</html>
